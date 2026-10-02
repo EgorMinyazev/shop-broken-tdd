@@ -36,6 +36,10 @@ def validate_order(
             return "invalid quantity"
         if int(line["qty"]) <= 0:
             return "invalid quantity"
+        if not line["unit_price_kopecks"].lstrip("-").isdigit():
+            return "invalid price"
+        if int(line["unit_price_kopecks"]) < 0:
+            return "invalid price"
 
     return None
 
