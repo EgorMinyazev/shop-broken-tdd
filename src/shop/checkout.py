@@ -82,4 +82,6 @@ def calculate_order_total(
 
     discount = percent_of(subtotal, discount_percent)
     base = subtotal - discount
+    if shipping_city and base < FREE_DELIVERY_FROM_KOPEKS:
+        base += SHIPPING_KOPEKS
     return base + percent_of(base, VAT_PERCENT)
