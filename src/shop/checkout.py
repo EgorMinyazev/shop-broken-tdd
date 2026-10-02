@@ -34,6 +34,8 @@ def validate_order(
             return "empty sku"
         if not line["qty"].isdigit():
             return "invalid quantity"
+        if int(line["qty"]) <= 0:
+            return "invalid quantity"
 
     return None
 
