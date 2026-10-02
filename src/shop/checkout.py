@@ -45,6 +45,9 @@ def validate_order(
         if int(line["unit_price_kopecks"]) < 0:
             return "invalid price"
 
+    if promo_code and promo_code not in PROMO_CODES:
+        return "unknown promo code"
+
     return None
 
 
