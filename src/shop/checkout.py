@@ -63,7 +63,17 @@ def calculate_order_total(
         return None
 
     subtotal = 0
+    total_qty = 0
     for line in lines:
-        subtotal += int(line["qty"]) * int(line["unit_price_kopecks"])
+        qty = int(line["qty"])
+        subtotal += qty * int(line["unit_price_kopecks"])
+        total_qty += qty
 
-    return subtotal + percent_of(subtotal, VAT_PERCENT)
+    discount_percent = 0
+    for threshold, percentage in TIER_DISCOUNTS:
+        if total_qty >= threshold:
+            discount_percent = percentage
+
+    discount = percent_of(subtotal, discount_percent)
+    base = subtotal - discount
+    return base + percent_of(base, VAT_PERCENT)
