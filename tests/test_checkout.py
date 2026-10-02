@@ -33,7 +33,7 @@ def test_empty_order_is_rejected() -> None:
 
 def test_empty_sku_is_rejected() -> None:
     """Spec 3, rule 2: a blank article code is not allowed."""
-    ...
+    assert validate_order([line(sku="")]) is not None
 
 
 def test_missing_line_key_is_rejected() -> None:
