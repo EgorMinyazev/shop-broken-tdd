@@ -1,3 +1,5 @@
+from shop.money import percent_of
+
 """Order checkout.
 
 The rules live in `src/shop/specs/checkout.md` - read it first.
@@ -21,7 +23,9 @@ def validate_order(
     shipping_city: str = "",
 ) -> str | None:
     """Return a human readable reason why the order is invalid, or None if it is fine."""
-    ...
+    if not lines:
+        return "empty order"
+    return None
 
 
 def calculate_order_total(
@@ -30,4 +34,11 @@ def calculate_order_total(
     shipping_city: str = "",
 ) -> int | None:
     """Return the order total in kopecks, or None if the order is invalid."""
-    ...
+    if validate_order(lines, promo_code, shipping_city) is not None:
+        return None
+
+    subtotal = 0
+    for line in lines:
+        subtotal += int(line["qty"]) * int(line["unit_price_kopecks"])
+
+    return subtotal + percent_of(subtotal, VAT_PERCENT)
