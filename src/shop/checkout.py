@@ -26,12 +26,16 @@ def validate_order(
     if not lines:
         return "empty order"
 
+    seen_skus = set()
     for line in lines:
         for key in REQUIRED_LINE_KEYS:
             if key not in line:
                 return "missing line key"
         if not line["sku"]:
             return "empty sku"
+        if line["sku"] in seen_skus:
+            return "duplicate sku"
+        seen_skus.add(line["sku"])
         if not line["qty"].isdigit():
             return "invalid quantity"
         if int(line["qty"]) <= 0:
