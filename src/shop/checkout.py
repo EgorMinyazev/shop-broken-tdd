@@ -77,6 +77,8 @@ def calculate_order_total(
     promo_percent = PROMO_CODES.get(promo_code, 0)
     if promo_percent > discount_percent:
         discount_percent = promo_percent
+    if discount_percent > MAX_DISCOUNT_PERCENT:
+        discount_percent = MAX_DISCOUNT_PERCENT
 
     discount = percent_of(subtotal, discount_percent)
     base = subtotal - discount
