@@ -74,6 +74,10 @@ def calculate_order_total(
         if total_qty >= threshold:
             discount_percent = percentage
 
+    promo_percent = PROMO_CODES.get(promo_code, 0)
+    if promo_percent > discount_percent:
+        discount_percent = promo_percent
+
     discount = percent_of(subtotal, discount_percent)
     base = subtotal - discount
     return base + percent_of(base, VAT_PERCENT)
