@@ -58,7 +58,7 @@ def test_negative_price_is_rejected() -> None:
 
 def test_duplicate_sku_is_rejected() -> None:
     """Spec 3, rule 8: the same article may appear only once."""
-    ...
+    assert validate_order([line(), line(sku="SKU-1")]) is not None
 
 
 def test_unknown_promo_code_is_rejected() -> None:
