@@ -48,7 +48,7 @@ def test_non_numeric_quantity_is_rejected() -> None:
 
 def test_zero_quantity_is_rejected() -> None:
     """Spec 3, rule 5: `qty` must be greater than zero."""
-    ...
+    assert validate_order([line(qty="0")]) is not None
 
 
 def test_negative_price_is_rejected() -> None:
