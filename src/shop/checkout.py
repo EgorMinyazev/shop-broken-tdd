@@ -17,6 +17,33 @@ TIER_DISCOUNTS = ((10, 5), (25, 10), (50, 15))
 REQUIRED_LINE_KEYS = ("sku", "qty", "unit_price_kopecks")
 
 
+def validate_quantity(value: str) -> bool:
+    """Return whether a quantity is a positive integer string."""
+    return value.isdigit() and int(value) > 0
+
+
+def validate_price(value: str) -> bool:
+    """Return whether a price is a non-negative integer string."""
+    return value.lstrip("-").isdigit() and int(value) >= 0
+
+
+def validate_line(line: dict[str, str], seen_skus: set[str]) -> str | None:
+    """Return a reason when one order line is invalid."""
+    for key in REQUIRED_LINE_KEYS:
+        if key not in line:
+            return "missing line key"
+    if not line["sku"]:
+        return "empty sku"
+    if line["sku"] in seen_skus:
+        return "duplicate sku"
+    seen_skus.add(line["sku"])
+    if not validate_quantity(line["qty"]):
+        return "invalid quantity"
+    if not validate_price(line["unit_price_kopecks"]):
+        return "invalid price"
+    return None
+
+
 def validate_order(
     lines: list[dict[str, str]],
     promo_code: str = "",
@@ -26,24 +53,11 @@ def validate_order(
     if not lines:
         return "empty order"
 
-    seen_skus = set()
+    seen_skus: set[str] = set()
     for line in lines:
-        for key in REQUIRED_LINE_KEYS:
-            if key not in line:
-                return "missing line key"
-        if not line["sku"]:
-            return "empty sku"
-        if line["sku"] in seen_skus:
-            return "duplicate sku"
-        seen_skus.add(line["sku"])
-        if not line["qty"].isdigit():
-            return "invalid quantity"
-        if int(line["qty"]) <= 0:
-            return "invalid quantity"
-        if not line["unit_price_kopecks"].lstrip("-").isdigit():
-            return "invalid price"
-        if int(line["unit_price_kopecks"]) < 0:
-            return "invalid price"
+        reason = validate_line(line, seen_skus)
+        if reason is not None:
+            return reason
 
     if promo_code and promo_code not in PROMO_CODES:
         return "unknown promo code"
@@ -51,6 +65,40 @@ def validate_order(
         return "unsupported city"
 
     return None
+
+
+def order_subtotal(lines: list[dict[str, str]]) -> tuple[int, int]:
+    """Return the subtotal and total quantity for validated lines."""
+    subtotal = 0
+    total_qty = 0
+    for line in lines:
+        qty = int(line["qty"])
+        subtotal += qty * int(line["unit_price_kopecks"])
+        total_qty += qty
+    return subtotal, total_qty
+
+
+def discount_percent(total_qty: int, promo_code: str) -> int:
+    """Return the larger applicable discount, limited by the configured cap."""
+    result = 0
+    for threshold, percentage in TIER_DISCOUNTS:
+        if total_qty >= threshold:
+            result = percentage
+    promo_percent = PROMO_CODES.get(promo_code, 0)
+    if promo_percent > result:
+        result = promo_percent
+    if result > MAX_DISCOUNT_PERCENT:
+        result = MAX_DISCOUNT_PERCENT
+    return result
+
+
+def order_base(subtotal: int, discount_pct: int, shipping_city: str) -> int:
+    """Return the discounted subtotal with applicable shipping."""
+    discount = percent_of(subtotal, discount_pct)
+    base = subtotal - discount
+    if shipping_city and base < FREE_DELIVERY_FROM_KOPEKS:
+        base += SHIPPING_KOPEKS
+    return base
 
 
 def calculate_order_total(
@@ -62,28 +110,8 @@ def calculate_order_total(
     if validate_order(lines, promo_code, shipping_city) is not None:
         return None
 
-    subtotal = 0
-    total_qty = 0
-    for line in lines:
-        qty = int(line["qty"])
-        subtotal += qty * int(line["unit_price_kopecks"])
-        total_qty += qty
-
-    discount_percent = 0
-    for threshold, percentage in TIER_DISCOUNTS:
-        if total_qty >= threshold:
-            discount_percent = percentage
-
-    promo_percent = PROMO_CODES.get(promo_code, 0)
-    if promo_percent > discount_percent:
-        discount_percent = promo_percent
-    if discount_percent > MAX_DISCOUNT_PERCENT:
-        discount_percent = MAX_DISCOUNT_PERCENT
-
-    discount = percent_of(subtotal, discount_percent)
-    base = subtotal - discount
-    if shipping_city and base < FREE_DELIVERY_FROM_KOPEKS:
-        base += SHIPPING_KOPEKS
+    subtotal, total_qty = order_subtotal(lines)
+    discount_pct = discount_percent(total_qty, promo_code)
+    base = order_base(subtotal, discount_pct, shipping_city)
     vat = percent_of(base, VAT_PERCENT)
-    total = base + vat
-    return total
+    return base + vat
