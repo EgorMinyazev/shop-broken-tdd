@@ -77,7 +77,7 @@ jobs:
       - run: uv sync --frozen
       - run: ./scripts/setup.sh --check
       - name: pytest
-        run: uv run pytest -v
+        run: uv run pytest -v --cov=shop --cov-report=term
       - name: отчёт о покрытии
         if: matrix.python-version == '3.12'
         run: uv run coverage report
