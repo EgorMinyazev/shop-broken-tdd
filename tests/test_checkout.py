@@ -112,7 +112,9 @@ def test_delivery_is_charged_for_small_order() -> None:
 
 def test_free_delivery_uses_discounted_subtotal() -> None:
     """Spec 4, step 7: the threshold is checked against the sum after the discount."""
-    ...
+    assert calculate_order_total(
+        [line(unit_price_kopecks="500000")], promo_code="VIP35", shipping_city="msk"
+    ) == 478_800
 
 
 def test_vat_is_charged_on_the_discounted_sum() -> None:
